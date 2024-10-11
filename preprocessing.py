@@ -67,7 +67,7 @@ def save_tensors(data: list[tuple[torch.Tensor]], target: str) -> None:
     '''
     target_path = f'./data/{target}.pt'
     if os.path.isfile(target_path):
-        previous_data = torch.load(target_path)
+        previous_data = torch.load(target_path, weights_only=True)
         new_data = previous_data + data
         torch.save(new_data, target_path)
     else:
@@ -110,3 +110,4 @@ if __name__ == '__main__':
         train_tensors, test_tensors = download_data_bangumi(anime, i, 1_000)
         save_tensors(train_tensors, 'train_tensors')
         save_tensors(test_tensors, 'test_tensors')
+    print('all downloads finished')
