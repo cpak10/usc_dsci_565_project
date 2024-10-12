@@ -105,9 +105,23 @@ if __name__ == '__main__':
 
     create_data_dir('./data')
     for i, anime in enumerate(animes):
-        if i == 2:
-            break
         train_tensors, test_tensors = download_data_bangumi(anime, i, 1_000)
         save_tensors(train_tensors, 'train_tensors')
         save_tensors(test_tensors, 'test_tensors')
-    print('all downloads finished')
+    print('all in-sample downloads finished')
+
+    out_of_samples = ['nurarihyonnomago', 'happysugarlife', 'wonderfulprecure',
+                      'shinmaiossanboukenshasaikyoupartynishinuhodokitaeraretemutekininaru',
+                      'uruseiyatsura2022', 'higurashinonakukoroni', 'konosuba', 'hametsunooukoku',
+                      'attackontitan', 'unlimitedfafnir']
+
+    train_tensors_prev = torch.load('./data/train_tensors.pt', weights_only=True)
+    test_tensors_prev = torch.load('./data/test_tensors.pt', weights_only=True)
+    save_tensors(train_tensors_prev, 'train_tensors_noise')
+    save_tensors(test_tensors_prev, 'test_tensors_noise')
+
+    for noise in out_of_samples:
+        train_tensors, test_tensors = download_data_bangumi(noise, 11, 100)
+        save_tensors(train_tensors, 'train_tensors_noise')
+        save_tensors(test_tensors, 'test_tensors_noise')
+    print('all out-sample downloads finished')
