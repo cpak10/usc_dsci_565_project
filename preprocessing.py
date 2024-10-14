@@ -32,7 +32,8 @@ def download_data_bangumi(title: str, label: int, n: int) -> tuple[list]:
     train = []
     test = []
 
-    dataset = load_dataset(f'BangumiBase/{title}', split='train', streaming=True)
+    dataset = load_dataset(f'BangumiBase/{title}', data_files='all.zip', split='train',
+                           streaming=True)
     for item, data in enumerate(dataset):
         if item == n:
             break
