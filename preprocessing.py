@@ -1,8 +1,11 @@
 import os
 import shutil
+import zipfile
+from time import time
 import torch
 from torchvision import transforms
 from datasets import load_dataset
+from huggingface_hub import hf_hub_download
 
 
 def download_data_bangumi(title: str, label: int, n: int) -> tuple[list]:
@@ -32,9 +35,15 @@ def download_data_bangumi(title: str, label: int, n: int) -> tuple[list]:
     train = []
     test = []
 
-    dataset = load_dataset(f'BangumiBase/{title}', data_files='all.zip', split='train',
-                           streaming=True)
-    for item, data in enumerate(dataset):
+    hf_hub_download(repo_id=f'BangumiBase/{title}', filename='all.zip', repo_type='dataset',
+                    local_dir='./data')
+    with zipfile.ZipFile('./data/all.zip', 'r') as zipped:
+        zipped.extractall('./data/images')
+
+    dataset = load_dataset('imagefolder', data_dir='./data/images', split='train')
+    iterable_dataset = dataset.to_iterable_dataset()
+
+    for item, data in enumerate(iterable_dataset):
         if item == n:
             break
         image = data['image']
@@ -45,8 +54,12 @@ def download_data_bangumi(title: str, label: int, n: int) -> tuple[list]:
             test.append((image_tensor, label))
 
         if (item + 1) % 100 == 0:
-            print(f'{title} - downloaded {item+1} images')
+            print(f'{title} - processed {item+1} images')
     print(f'finished downloading {title}')
+
+    os.remove('./data/all.zip')
+    shutil.rmtree('./data/images')
+    shutil.rmtree('./data/.cache')
 
     return (train, test)
 
@@ -100,6 +113,8 @@ def create_data_dir(dir_name: str) -> None:
 
 if __name__ == '__main__':
 
+    start_time = time()
+
     animes = ['haikyuu', 'jujutsukaisen', 'chainsawman', 'sousounofrieren', 'spyxfamily',
               'bluelock', 'skiptoloafer', 'kimetsunoyaibayuukakuhen',
               'deaddeaddemonsdededededestruction', 'durarara']
@@ -126,3 +141,7 @@ if __name__ == '__main__':
         save_tensors(train_tensors, 'train_tensors_noise')
         save_tensors(test_tensors, 'test_tensors_noise')
     print('all out-sample downloads finished')
+
+    end_time = time()
+    time_taken = (end_time - start_time) // 60
+    print('total time:', time_taken, 'min')
