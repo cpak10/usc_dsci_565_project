@@ -1,7 +1,7 @@
 # Animation Classification Through Various CNN Architectures
 
 ## Data Initialization
-In effort to standardize the training and testing data for model development, please follow the instructions below.
+In effort to standardize data for model development, please follow the instructions below.
 
 ### Local Setup
 1. `pip install -r requirements.txt`
@@ -14,11 +14,17 @@ In effort to standardize the training and testing data for model development, pl
 
 For more information on setting up virtual machines for Google Colab please [see the below section](#machine-initialization).
 
-Both of these steps should initialize a data folder in your current directory and create four .pt files. You should only have to run this code once per environment. Once the .pt files are created, you can then run the following code to load the data for model development.
+Both of these steps should initialize a data folder in your current directory and create two .pt files. You should only have to run this code once per environment. Once the .pt files are created, you can then run the following code to load the data for model development.
 
 ```
-training_data = torch.load('./data/train_tensors.pt', weights_only=True)
-trainloader = torch.utils.data.DataLoader(training_data, batch_size=32, shuffle=True)
+data = torch.load('./data/tensors.pt', weights_only=True)
+
+train_percent = 0.9
+test_percent = 0.1
+train_dataset, test_dataset = torch.utils.data.random_split(data, [train_percent, test_percent])
+
+train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=32, shuffle=True)
+test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=32, shuffle=True)
 ```
 
 You can also run `preprocessing_check.ipynb` to ensure the data was downloaded correctly.

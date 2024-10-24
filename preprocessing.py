@@ -8,7 +8,7 @@ from datasets import load_dataset
 from huggingface_hub import hf_hub_download
 
 
-def download_data_bangumi(title: str, label: int, n: int) -> tuple[list]:
+def download_data_bangumi(title: str, label: int, n: int) -> list:
     '''
     Download data from huggingface BangumiBase (https://huggingface.co/BangumiBase)
 
@@ -23,17 +23,14 @@ def download_data_bangumi(title: str, label: int, n: int) -> tuple[list]:
 
     Returns
     -------
-    train : list[tuple[torch.Tensor]]
+    tensors : list[tuple[torch.Tensor]]
         training data with image tensor and labels
-    test : list[tuple[torch.Tensor]]
-        testing data with image tensor and labels
     '''
     transform = transforms.Compose([
         transforms.Resize((256, 256)),
         transforms.ToTensor()])
 
-    train = []
-    test = []
+    tensors = []
 
     hf_hub_download(repo_id=f'BangumiBase/{title}', filename='all.zip', repo_type='dataset',
                     local_dir='./data')
@@ -41,17 +38,15 @@ def download_data_bangumi(title: str, label: int, n: int) -> tuple[list]:
         zipped.extractall('./data/images')
 
     dataset = load_dataset('imagefolder', data_dir='./data/images', split='train')
-    iterable_dataset = dataset.to_iterable_dataset()
+    iterable_dataset = dataset.to_iterable_dataset(num_shards=100)
+    iterable_dataset_shuffled = iterable_dataset.shuffle(buffer_size=100)
 
-    for item, data in enumerate(iterable_dataset):
+    for item, data in enumerate(iterable_dataset_shuffled):
         if item == n:
             break
         image = data['image']
         image_tensor = transform(image)
-        if item % 5 != 0:
-            train.append((image_tensor, label))
-        else:
-            test.append((image_tensor, label))
+        tensors.append((image_tensor, label))
 
         if (item + 1) % 100 == 0:
             print(f'{title} - processed {item+1} images')
@@ -61,7 +56,7 @@ def download_data_bangumi(title: str, label: int, n: int) -> tuple[list]:
     shutil.rmtree('./data/images')
     shutil.rmtree('./data/.cache')
 
-    return (train, test)
+    return tensors
 
 
 def save_tensors(data: list[tuple[torch.Tensor]], target: str) -> None:
@@ -121,9 +116,8 @@ if __name__ == '__main__':
 
     create_data_dir('./data')
     for i, anime in enumerate(animes):
-        train_tensors, test_tensors = download_data_bangumi(anime, i, 1_000)
-        save_tensors(train_tensors, 'train_tensors')
-        save_tensors(test_tensors, 'test_tensors')
+        all_tensors = download_data_bangumi(anime, i, 1_000)
+        save_tensors(all_tensors, 'tensors')
     print('all in-sample downloads finished')
 
     out_of_samples = ['nurarihyonnomago', 'happysugarlife', 'wonderfulprecure',
@@ -131,15 +125,12 @@ if __name__ == '__main__':
                       'uruseiyatsura2022', 'higurashinonakukoroni', 'konosuba', 'hametsunooukoku',
                       'attackontitan', 'unlimitedfafnir']
 
-    train_tensors_prev = torch.load('./data/train_tensors.pt', weights_only=True)
-    test_tensors_prev = torch.load('./data/test_tensors.pt', weights_only=True)
-    save_tensors(train_tensors_prev, 'train_tensors_noise')
-    save_tensors(test_tensors_prev, 'test_tensors_noise')
+    tensors_prev = torch.load('./data/tensors.pt', weights_only=True)
+    save_tensors(tensors_prev, 'tensors_noise')
 
     for noise in out_of_samples:
-        train_tensors, test_tensors = download_data_bangumi(noise, 11, 100)
-        save_tensors(train_tensors, 'train_tensors_noise')
-        save_tensors(test_tensors, 'test_tensors_noise')
+        all_tensors = download_data_bangumi(noise, 11, 100)
+        save_tensors(all_tensors, 'tensors_noise')
     print('all out-sample downloads finished')
 
     end_time = time()
