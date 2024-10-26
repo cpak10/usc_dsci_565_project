@@ -1,19 +1,9 @@
-from torch.utils.data import Dataset, DataLoader
-import torchvision
+from torch.utils.data import DataLoader
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-class CustomDataset(Dataset):
-    def __init__(self, data_path):
-        self.data = torch.load(data_path)
-        
-    def __len__(self):
-        return len(self.data)
-        
-    def __getitem__(self, idx):
-        return self.data[idx]
 
 class Net(nn.Module):
     def __init__(self):
@@ -39,8 +29,8 @@ class Net(nn.Module):
         return x
 
 # create dataset
-dataload = CustomDataset('data/tensors.pt')
-all_data = DataLoader(dataload, batch_size=4, shuffle=True)
+data_path = 'data/tensors.pt'
+all_data = DataLoader(torch.load(data_path), batch_size=4, shuffle=True)
 
 # define simple CNN
 net = Net()
