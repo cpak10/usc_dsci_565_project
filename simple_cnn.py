@@ -30,7 +30,8 @@ class Net(nn.Module):
 
 # create dataset
 data_path = 'data/tensors.pt'
-all_data = DataLoader(torch.load(data_path), batch_size=4, shuffle=True)
+batch_size = 4
+all_data = DataLoader(torch.load(data_path), batch_size=batch_size, shuffle=True)
 
 # define simple CNN
 net = Net()
@@ -55,8 +56,9 @@ for epoch in range(2):
 
         # print statistics every 100 batches
         running_loss += loss.item()
-        if i % 100 == 99:    
-            print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 100:.3f}')
+        j = 10000 / batch_size / 10
+        if i % j == j - 1:    
+            print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / j:.3f}')
             running_loss = 0.0
 
 print('Finished Training')
