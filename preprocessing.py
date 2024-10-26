@@ -1,4 +1,5 @@
 import os
+import json
 import shutil
 import zipfile
 from time import time
@@ -119,6 +120,11 @@ if __name__ == '__main__':
         all_tensors = download_data_bangumi(anime, i, 1_000)
         save_tensors(all_tensors, 'tensors')
     print('all in-sample downloads finished')
+
+    label_map = dict(enumerate(animes))
+    label_map[11] = 'noise'
+    with open('./data/anime_label_map.json', 'w') as f:
+        json.dump(label_map, f)
 
     out_of_samples = ['nurarihyonnomago', 'happysugarlife', 'wonderfulprecure',
                       'shinmaiossanboukenshasaikyoupartynishinuhodokitaeraretemutekininaru',
