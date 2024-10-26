@@ -114,16 +114,16 @@ if __name__ == '__main__':
     animes = ['haikyuu', 'jujutsukaisen', 'chainsawman', 'sousounofrieren', 'spyxfamily',
               'bluelock', 'skiptoloafer', 'kimetsunoyaibayuukakuhen',
               'deaddeaddemonsdededededestruction', 'durarara']
-    
-    label_map = dict(zip(animes, list(range(len(animes)))))
-    with open('./data/anime_label_map.json', 'w') as f:
-        json.dump(label_map, f)
 
     create_data_dir('./data')
     for i, anime in enumerate(animes):
         all_tensors = download_data_bangumi(anime, i, 1_000)
         save_tensors(all_tensors, 'tensors')
     print('all in-sample downloads finished')
+
+    label_map = dict(zip(animes, list(range(len(animes)))))
+    with open('./data/anime_label_map.json', 'w') as f:
+        json.dump(label_map, f)
 
     out_of_samples = ['nurarihyonnomago', 'happysugarlife', 'wonderfulprecure',
                       'shinmaiossanboukenshasaikyoupartynishinuhodokitaeraretemutekininaru',
