@@ -121,7 +121,8 @@ if __name__ == '__main__':
         save_tensors(all_tensors, 'tensors')
     print('all in-sample downloads finished')
 
-    label_map = dict(zip(animes, list(range(len(animes)))))
+    label_map = dict(enumerate(animes))
+    label_map[11] = 'noise'
     with open('./data/anime_label_map.json', 'w') as f:
         json.dump(label_map, f)
 
