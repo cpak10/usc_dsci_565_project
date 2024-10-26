@@ -1,4 +1,5 @@
 import os
+import json
 import shutil
 import zipfile
 from time import time
@@ -113,6 +114,10 @@ if __name__ == '__main__':
     animes = ['haikyuu', 'jujutsukaisen', 'chainsawman', 'sousounofrieren', 'spyxfamily',
               'bluelock', 'skiptoloafer', 'kimetsunoyaibayuukakuhen',
               'deaddeaddemonsdededededestruction', 'durarara']
+    
+    label_map = dict(zip(animes, list(range(len(animes)))))
+    with open('./data/anime_label_map.json', 'w') as f:
+        json.dump(label_map, f)
 
     create_data_dir('./data')
     for i, anime in enumerate(animes):
