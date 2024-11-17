@@ -15,7 +15,7 @@ class dataset():
     Class defining the creation of a huggingface Dataset for training. Probably doesn't
     need to be a class rather than just a couple functions, but fuck it.
     '''
-    def __init__(self, data_path='./data/tensors.pt', label_path='./data/anime_label_map.json', noise_path=None, train_test_split=0):
+    def __init__(self, data_path='data/tensors.pt', label_path='data/anime_label_map.json', noise_path=None, train_test_split=0):
         self.data_path = data_path
         self.label_path = label_path
         self.noise_path = noise_path
