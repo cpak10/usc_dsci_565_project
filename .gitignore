@@ -1,0 +1,6 @@
+/data
+/model_image
+/predictions
+/training_results
+.DS_Store
+__pycache__

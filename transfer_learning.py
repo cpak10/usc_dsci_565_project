@@ -2,6 +2,7 @@ import torch
 import time
 import json
 import evaluate
+import argparse
 import numpy as np
 import pandas as pd
 from datasets import Dataset
@@ -38,7 +39,6 @@ class dataset():
             return split['train'], split['test']
         else:
             return all_data
-
 
     def get_labels(self):
         '''
@@ -82,13 +82,17 @@ class classifier():
         image to local machine.
         '''
 
+        # update the output layer of the pre-trained model with a linear layer sizing
+        # the default ouput down to our n-label classification problem
+        self.classifier.classifier = torch.nn.Linear(self.classifier.classifier.in_features, len(self.labels))
+
         # set device for model execution
         cuda = torch.cuda.is_available()
         mps = torch.backends.mps.is_available()
         device = 'cuda' if cuda else 'mps' if mps else 'cpu'
         self.classifier.to(device)
 
-        # define initial parameters
+        # define initial hyperparameters
         args_d = {
             'output_dir': self.save_path + '/model_image',
             'save_strategy': 'no',
@@ -97,21 +101,21 @@ class classifier():
             'num_train_epochs': self.num_train_epochs,
             'weight_decay': self.weight_decay,
             'eval_strategy': 'steps',
-            'eval_steps': 250,
-            'logging_steps': 250,
+            'eval_steps': 100,
+            'logging_steps': 100,
             'per_device_eval_batch_size': self.per_device_train_batch_size,
             'seed': 0
         }
+        m_args = TrainingArguments(**args_d)
+
+        # define key training params
         trainer_d = {
             'model': self.classifier,
             'train_dataset': train,
             'eval_dataset': test,
-            'compute_metrics': self.compute_metrics           
+            'compute_metrics': self.compute_metrics,
+            'args': m_args         
         }
-
-        # initialize model
-        m_args = TrainingArguments(**args_d)
-        trainer_d['args'] = m_args
         trainer = Trainer(**trainer_d)
 
         # train model and save image
@@ -125,61 +129,101 @@ class classifier():
         Load a saved model and use it to make predictions on a dataset.
         '''
 
+        # import pdb; pdb.set_trace()
+
         p_args = TrainingArguments(
             # not actually used for predictions, but a required argument
-            output_dir=self.save_path + '/predictions'
+            output_dir=self.save_path + 'predictions'
         )
         p_trainer = Trainer(
-            model=AutoModelForImageClassification.from_pretrained(self.save_path + '/model_image'),
+            model=AutoModelForImageClassification.from_pretrained(self.save_path + 'model_image'),
             args=p_args
         )
         pred = p_trainer.predict(data)
 
-        # obtain label encoding to inverse transform predictions
-        invert_labels = {y: x for x, y in self.labels.items()}
-
         # retrieve predictions in form of class probabilities and most likely class
         pred_proba = torch.nn.functional.softmax(torch.tensor(pred.predictions), dim=-1)
-        pred_class = [invert_labels[l] for l in (torch.argmax(pred_proba, dim=-1).tolist())]
+        pred_class = [labels[str(l)] for l in (torch.argmax(pred_proba, dim=-1).tolist())]
 
         # format as pandas dataframes and return complete predictions
-        proba_df = pd.DataFrame(columns=list(invert_labels.values()), data=pred_proba.tolist())
+        proba_df = pd.DataFrame(columns=list(labels.values()), data=pred_proba.tolist())
         class_df = pd.DataFrame(columns=['predicted_label'], data=pred_class)
         pred_df = pd.concat([class_df, proba_df], axis=1)
 
         return pred_df
 
 
+def argparser():
+    '''
+    Parse whether the script is being ran in training mode, or for daily predictions.
+    '''
+
+    # add args for training and predicting
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model', type=str, default='google/efficientnet-b3')
+    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--learning_rate', type=float, default=1e-2)
+    parser.add_argument('--weight_decay', type=float, default=0.1)
+    parser.add_argument('--epochs', type=float, default=2.0)
+    parser.add_argument('--save_path', type=str, default='/Users/jonah.krop/Documents/USC/usc_dsci_565_project/')
+    parser.add_argument('--train_test_split', type=float, default=0.2)
+    parser.add_argument('--data_path', type=str, default='/Users/jonah.krop/Documents/USC/usc_dsci_565_project/data/tensors.pt')
+    parser.add_argument('--label_path', type=str, default='/Users/jonah.krop/Documents/USC/usc_dsci_565_project/data/anime_label_map.json')
+    parser.add_argument('--noise_path', type=str, default=None)
+    
+    return parser.parse_args()
+
+
 if __name__ == '__main__':
 
-    t = time.time()
+    t = int(time.time())
+
+    # parse execution args
+    args = argparser()
+
+    valid_models = ['google/efficientnet-b3', 'google/efficientnet-b7', 'mobilenet_v2_1.0_224']
+    if args.model not in valid_models:
+        raise ValueError(f'for now, please use a model in {valid_models}')
 
     # initialize train, test, and labels datasets
     dataloader = dataset(
-        data_path='/Users/jonah.krop/Documents/USC/usc_dsci_565_project/data/tensors.pt',
-        label_path='/Users/jonah.krop/Documents/USC/usc_dsci_565_project/data/anime_label_map.json',
-        train_test_split=0.9
+        data_path=args.data_path,
+        label_path=args.label_path,
+        train_test_split=args.train_test_split,
+        noise_path=args.noise_path
     )
     train, test = dataloader.get_dataset()
     labels = dataloader.get_labels()
 
-    models = ['google/efficientnet-b3', 'google/efficientnet-b7', 'mobilenet_v2_1.0_224']
-    model = models[0]
+
     # initialize model for training
-    save_path = '/Users/jonah.krop/Documents/USC/usc_dsci_565_project'
     model = classifier(
-        model=model,
+        model=args.model,
         labels=labels,
-        save_path=save_path,
-        learning_rate=1e-2,
-        batch_size=32
+        save_path=args.save_path,
+        learning_rate=args.learning_rate,
+        batch_size=args.batch_size,
+        num_train_epochs=args.epochs,
+        weight_decay=args.weight_decay
     )
 
-    # train model and save step-by-step results to json file
+    # train model
     train_results = model.train_model(train, test).state.log_history
-    with open(save_path+f'model_json_{int(t)}.json', 'w') as f:
-            json.dump(train_results, f)
+    train_params = {
+        'model': args.model,
+        'learning_rate': args.learning_rate,
+        'batch_size': args.batch_size,
+        'epochs': args.epochs,
+        'weight_decay': args.weight_decay,
+        'train_test_split': args.train_test_split,
+        'added_noise': args.noise_path is not None
+    }
+    # save step-by-step logs and model params to json file
+    with open(args.save_path+f'training_results/model_json_{t}.json', 'w') as f:
+        json.dump(train_results, f)
+    with open(args.save_path+f'training_results/model_params_{t}.json', 'w') as f:
+        json.dump(train_params, f)
 
     # make predictions with test dataset and save
     pred = model.predict(test) # auto loads model image at save_path
-    pd.to_csv(save_path + f'predictions_{int(t)}.csv', index=False)
+    pd.to_csv(args.save_path + f'predictions_{t}.csv', index=False)
