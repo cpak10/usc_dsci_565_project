@@ -63,7 +63,7 @@ class classifier():
         self.num_train_epochs = num_train_epochs
         self.weight_decay = weight_decay
         self.labels = labels
-        self.classifier = AutoModelForImageClassification.from_pretrained(model)
+        self.classifier = AutoModelForImageClassification.from_pretrained(model, num_labels=len(labels), ignore_mismatched_sizes=True)
         self.save_path = save_path
 
     def compute_metrics(self, pred):
@@ -84,7 +84,7 @@ class classifier():
 
         # update the output layer of the pre-trained model with a linear layer sizing
         # the default ouput down to our n-label classification problem
-        self.classifier.classifier = torch.nn.Linear(self.classifier.classifier.in_features, len(self.labels))
+        # self.classifier.classifier = torch.nn.Linear(self.classifier.classifier.in_features, len(self.labels))
 
         # set device for model execution
         cuda = torch.cuda.is_available()
@@ -226,4 +226,4 @@ if __name__ == '__main__':
 
     # make predictions with test dataset and save
     pred = model.predict(test) # auto loads model image at save_path
-    pd.to_csv(args.save_path + f'predictions_{t}.csv', index=False)
+    pred.to_csv(args.save_path + f'predictions_{t}.csv', index=False)
