@@ -181,7 +181,7 @@ if __name__ == '__main__':
     # parse execution args
     args = argparser()
 
-    valid_models = ['google/efficientnet-b3', 'google/efficientnet-b7', 'mobilenet_v2_1.0_224']
+    valid_models = ['google/efficientnet-b3', 'google/efficientnet-b7', 'google/mobilenet_v2_1.0_224']
     if args.model not in valid_models:
         raise ValueError(f'for now, please use a model in {valid_models}')
 
