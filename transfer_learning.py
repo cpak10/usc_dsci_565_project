@@ -11,6 +11,10 @@ from transformers import AutoModelForImageClassification, Trainer, TrainingArgum
 
 
 class dataset():
+    '''
+    Class defining the creation of a huggingface Dataset for training. Probably doesn't
+    need to be a class rather than just a couple functions, but fuck it.
+    '''
     def __init__(self, data_path='./data/tensors.pt', label_path='./data/anime_label_map.json', noise_path=None, train_test_split=0):
         self.data_path = data_path
         self.label_path = label_path
@@ -82,17 +86,13 @@ class classifier():
         image to local machine.
         '''
 
-        # update the output layer of the pre-trained model with a linear layer sizing
-        # the default ouput down to our n-label classification problem
-        # self.classifier.classifier = torch.nn.Linear(self.classifier.classifier.in_features, len(self.labels))
-
         # set device for model execution
         cuda = torch.cuda.is_available()
         mps = torch.backends.mps.is_available()
         device = 'cuda' if cuda else 'mps' if mps else 'cpu'
         self.classifier.to(device)
 
-        # define initial hyperparameters
+        # define initial hyperparameters for training the model
         args_d = {
             'output_dir': self.save_path + '/model_image',
             'save_strategy': 'no',
@@ -108,7 +108,7 @@ class classifier():
         }
         m_args = TrainingArguments(**args_d)
 
-        # define key training params
+        # define key training params for training the model
         trainer_d = {
             'model': self.classifier,
             'train_dataset': train,
