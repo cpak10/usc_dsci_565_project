@@ -15,10 +15,9 @@ class dataset():
     Class defining the creation of a huggingface Dataset for training. Probably doesn't
     need to be a class rather than just a couple functions, but fuck it.
     '''
-    def __init__(self, data_path='data/tensors.pt', label_path='data/anime_label_map.json', noise_path=None, train_test_split=0):
+    def __init__(self, data_path='data/tensors.pt', label_path='data/anime_label_map.json', train_test_split=0):
         self.data_path = data_path
         self.label_path = label_path
-        self.noise_path = noise_path
         self.train_test_split=train_test_split
 
     def get_dataset(self):
@@ -27,14 +26,8 @@ class dataset():
         ease of use in fine-tuning a model.
         '''
         
-        # load all data, optionally with noise
+        # load all data
         tensors = torch.load(self.data_path)
-        if self.noise_path is not None:
-            print('Warning: adding noise creates a very, very large dataset. Waiting 5 seconds in case you want to cancel')
-            time.sleep(5)
-            noise = torch.load(self.noise_path)
-            tensors += noise
-
         all_data = Dataset.from_dict({'pixel_values': [t[0] for t in tensors], 'labels': [t[1] for t in tensors]})
         
         # optionally apply a train/test split
@@ -51,7 +44,7 @@ class dataset():
         with open(self.label_path, 'r') as f:
             labels = json.load(f)
 
-        if self.noise_path is None:
+        if not self.data_path.endswith('_noise.pt'):
             del labels['11']
 
         return labels
@@ -169,7 +162,6 @@ def argparser():
     parser.add_argument('--train_test_split', type=float, default=0.2)
     parser.add_argument('--data_path', type=str, default='/Users/jonah.krop/Documents/USC/usc_dsci_565_project/data/tensors.pt')
     parser.add_argument('--label_path', type=str, default='/Users/jonah.krop/Documents/USC/usc_dsci_565_project/data/anime_label_map.json')
-    parser.add_argument('--noise_path', type=str, default=None)
     
     return parser.parse_args()
 
@@ -189,8 +181,7 @@ if __name__ == '__main__':
     dataloader = dataset(
         data_path=args.data_path,
         label_path=args.label_path,
-        train_test_split=args.train_test_split,
-        noise_path=args.noise_path
+        train_test_split=args.train_test_split
     )
     train, test = dataloader.get_dataset()
     labels = dataloader.get_labels()
@@ -215,8 +206,7 @@ if __name__ == '__main__':
         'batch_size': args.batch_size,
         'epochs': args.epochs,
         'weight_decay': args.weight_decay,
-        'train_test_split': args.train_test_split,
-        'added_noise': args.noise_path is not None
+        'train_test_split': args.train_test_split
     }
     # save step-by-step logs and model params to json file
     with open(args.save_path+f'training_results/model_json_{t}.json', 'w') as f:
