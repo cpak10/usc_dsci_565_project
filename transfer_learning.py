@@ -214,6 +214,7 @@ if __name__ == '__main__':
     train_results = model.train_model(train, test).state.log_history
     train_params = {
         'model': args.model,
+        'pretrained': args.pretrained,
         'learning_rate': args.learning_rate,
         'batch_size': args.batch_size,
         'epochs': args.epochs,
