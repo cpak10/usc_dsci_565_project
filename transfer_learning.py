@@ -6,7 +6,7 @@ import argparse
 import numpy as np
 import pandas as pd
 from datasets import Dataset
-from transformers import AutoModelForImageClassification, Trainer, TrainingArguments
+from transformers import AutoConfig, AutoModelForImageClassification, Trainer, TrainingArguments
 # from torchvision import models
 
 
@@ -15,7 +15,7 @@ class dataset():
     Class defining the creation of a huggingface Dataset for training. Probably doesn't
     need to be a class rather than just a couple functions, but fuck it.
     '''
-    def __init__(self, data_path='data/tensors.pt', label_path='data/anime_label_map.json', train_test_split=0):
+    def __init__(self, data_path='/data/tensors.pt', label_path='/data/anime_label_map.json', train_test_split=0):
         self.data_path = data_path
         self.label_path = label_path
         self.train_test_split=train_test_split
@@ -60,9 +60,18 @@ class classifier():
         self.num_train_epochs = num_train_epochs
         self.weight_decay = weight_decay
         self.labels = labels
-        self.classifier = AutoModelForImageClassification.from_pretrained(model, num_labels=len(labels), ignore_mismatched_sizes=True)
         self.save_path = save_path
         self.pretrained = pretrained
+        
+        # define model setup differently if we're not using pre-trained weights. pretty confusing, but
+        # building the classifier using from_config() only initializes the model architecture, not the weights
+        if not pretrained:
+            print('initializing random weights')
+            config = AutoConfig.from_pretrained(model, num_labels=len(labels), ignore_mismatched_sizes=True)
+            self.classifier = AutoModelForImageClassification.from_config(config)
+        else:
+            print('initializing pre-trained weights')
+            self.classifier = AutoModelForImageClassification.from_pretrained(model, num_labels=len(labels), ignore_mismatched_sizes=True)
 
     def compute_metrics(self, pred):
         '''
@@ -85,10 +94,6 @@ class classifier():
         mps = torch.backends.mps.is_available()
         device = 'cuda' if cuda else 'mps' if mps else 'cpu'
         self.classifier.to(device)
-
-        # reset weights if we're not using a pretrained model
-        if not self.pretrained:
-            self.classifier.init_weights()
 
         # define initial hyperparameters for training the model
         args_d = {
@@ -131,10 +136,10 @@ class classifier():
 
         p_args = TrainingArguments(
             # not actually used for predictions, but a required argument
-            output_dir=self.save_path + 'predictions'
+            output_dir=self.save_path + '/predictions'
         )
         p_trainer = Trainer(
-            model=AutoModelForImageClassification.from_pretrained(self.save_path + 'model_image'),
+            model=AutoModelForImageClassification.from_pretrained(self.save_path + '/model_image'),
             args=p_args
         )
         pred = p_trainer.predict(data)
@@ -159,15 +164,13 @@ def argparser():
     # add args for training and predicting
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', type=str, default='google/efficientnet-b3')
-    parser.add_argument('--pretrained', type=bool, default=True)
+    parser.add_argument('--pretrained', action='store_true')
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--learning_rate', type=float, default=1e-2)
     parser.add_argument('--weight_decay', type=float, default=0.1)
     parser.add_argument('--epochs', type=float, default=2.0)
-    parser.add_argument('--save_path', type=str, default='/Users/jonah.krop/Documents/USC/usc_dsci_565_project/')
+    parser.add_argument('--directory', type=str, default='/Users/jonah.krop/Documents/USC/usc_dsci_565_project')
     parser.add_argument('--train_test_split', type=float, default=0.2)
-    parser.add_argument('--data_path', type=str, default='/Users/jonah.krop/Documents/USC/usc_dsci_565_project/data/tensors.pt')
-    parser.add_argument('--label_path', type=str, default='/Users/jonah.krop/Documents/USC/usc_dsci_565_project/data/anime_label_map.json')
     
     return parser.parse_args()
 
@@ -179,14 +182,16 @@ if __name__ == '__main__':
     # parse execution args
     args = argparser()
 
+    print(args)
+
     valid_models = ['google/efficientnet-b3', 'google/efficientnet-b7', 'google/mobilenet_v2_1.0_224']
     if args.model not in valid_models:
         raise ValueError(f'for now, please use a model in {valid_models}')
 
     # initialize train, test, and labels datasets
     dataloader = dataset(
-        data_path=args.data_path,
-        label_path=args.label_path,
+        data_path=args.directory+'/data/tensors.pt',
+        label_path=args.directory+'/data/anime_label_map.json',
         train_test_split=args.train_test_split
     )
     train, test = dataloader.get_dataset()
@@ -198,7 +203,7 @@ if __name__ == '__main__':
         model=args.model,
         pretrained=args.pretrained,
         labels=labels,
-        save_path=args.save_path,
+        save_path=args.directory,
         learning_rate=args.learning_rate,
         batch_size=args.batch_size,
         num_train_epochs=args.epochs,
@@ -216,11 +221,12 @@ if __name__ == '__main__':
         'train_test_split': args.train_test_split
     }
     # save step-by-step logs and model params to json file
-    with open(args.save_path+f'training_results/model_json_{t}.json', 'w') as f:
+    with open(args.directory+f'/training_results/model_json_{t}.json', 'w') as f:
         json.dump(train_results, f)
-    with open(args.save_path+f'training_results/model_params_{t}.json', 'w') as f:
+    with open(args.directory+f'/training_results/model_params_{t}.json', 'w') as f:
         json.dump(train_params, f)
 
     # make predictions with test dataset and save
     pred = model.predict(test) # auto loads model image at save_path
-    pred.to_csv(args.save_path + f'predictions_{t}.csv', index=False)
+    pred.insert(0, 'actual', [labels[str(l['labels'])] for l in test])
+    pred.to_csv(args.directory + f'/training_results/predictions_{t}.csv', index=False)
