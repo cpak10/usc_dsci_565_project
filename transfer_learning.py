@@ -88,7 +88,7 @@ class classifier():
 
         # reset weights if we're not using a pretrained model
         if not self.pretrained:
-            model.init_weights()
+            self.classifier.init_weights()
 
         # define initial hyperparameters for training the model
         args_d = {
