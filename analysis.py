@@ -3,10 +3,8 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import json
+import os
 
-# accuracy
-# top n accuracy
-# loss by epoch
 
 def compute_accuracy(time, top_n=2):
     '''
@@ -39,7 +37,7 @@ def compute_accuracy(time, top_n=2):
     g = pd.concat([g, g_all], axis=0).reset_index(drop=True)
     g.columns = ['anime', f'top-{top_n} accuracy %', 'top-1 accuracy %', 'num_images']
     
-    print(g)
+    # print(g)
     g.to_csv(path+f'/accuracy_{time}.csv', index=False)
 
 
@@ -76,7 +74,8 @@ def graph_performance(time):
 
 
 path = '/Users/jonah.krop/Documents/USC/usc_dsci_565_project/training_results'
-time = '1732207905'
+times = sorted([f.split('.')[0][-10:] for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and f[0:11] == 'predictions'])
 
-graph_performance(time)
-compute_accuracy(time)
+for time in times:
+    graph_performance(time)
+    compute_accuracy(time)
