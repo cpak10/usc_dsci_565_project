@@ -67,7 +67,7 @@ def graph_performance(time):
     sns.lineplot(data=eval_log, x='epoch', y='loss', hue='eval')
     plt.xlabel('Training Epoch')
     plt.ylabel('Model Performance')
-    plt.ylim([0, 2])
+    plt.ylim([0, 2.5])
     plt.grid()
     plt.savefig(path + f'/epoch_performance_{time}.png', dpi=200)
     plt.close()
