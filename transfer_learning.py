@@ -54,7 +54,7 @@ class classifier():
     '''
     Class defining classifier model, providing methods for training model and making predictions.
     '''
-    def __init__(self, model, labels, save_path, learning_rate=5e-5, batch_size=10, num_train_epochs=3, weight_decay=0.1):
+    def __init__(self, model, pretrained, labels, save_path, learning_rate=5e-5, batch_size=10, num_train_epochs=3, weight_decay=0.1):
         self.learning_rate = learning_rate
         self.per_device_train_batch_size = batch_size
         self.num_train_epochs = num_train_epochs
@@ -62,6 +62,7 @@ class classifier():
         self.labels = labels
         self.classifier = AutoModelForImageClassification.from_pretrained(model, num_labels=len(labels), ignore_mismatched_sizes=True)
         self.save_path = save_path
+        self.pretrained = pretrained
 
     def compute_metrics(self, pred):
         '''
@@ -84,6 +85,10 @@ class classifier():
         mps = torch.backends.mps.is_available()
         device = 'cuda' if cuda else 'mps' if mps else 'cpu'
         self.classifier.to(device)
+
+        # reset weights if we're not using a pretrained model
+        if not self.pretrained:
+            model.init_weights()
 
         # define initial hyperparameters for training the model
         args_d = {
@@ -154,6 +159,7 @@ def argparser():
     # add args for training and predicting
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', type=str, default='google/efficientnet-b3')
+    parser.add_argument('--pretrained', type=bool, default=True)
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--learning_rate', type=float, default=1e-2)
     parser.add_argument('--weight_decay', type=float, default=0.1)
@@ -190,6 +196,7 @@ if __name__ == '__main__':
     # initialize model for training
     model = classifier(
         model=args.model,
+        pretrained=args.pretrained,
         labels=labels,
         save_path=args.save_path,
         learning_rate=args.learning_rate,
