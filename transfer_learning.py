@@ -15,9 +15,10 @@ class dataset():
     Class defining the creation of a huggingface Dataset for training. Probably doesn't
     need to be a class rather than just a couple functions, but fuck it.
     '''
-    def __init__(self, data_path='/data/tensors.pt', label_path='/data/anime_label_map.json', train_test_split=0):
-        self.data_path = data_path
-        self.label_path = label_path
+    def __init__(self, noise=False, directory='', train_test_split=0):
+        self.noise = noise
+        self.data_path = directory + '/data/tensors.pt' if not noise else '/data/tensors_noise.pt'
+        self.label_path = directory + '/data/anime_label_map.json'
         self.train_test_split=train_test_split
 
     def get_dataset(self):
@@ -44,7 +45,7 @@ class dataset():
         with open(self.label_path, 'r') as f:
             labels = json.load(f)
 
-        if not self.data_path.endswith('_noise.pt'):
+        if not self.noise:
             del labels['11']
 
         return labels
@@ -165,6 +166,7 @@ def argparser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', type=str, default='google/efficientnet-b3')
     parser.add_argument('--pretrained', action='store_true')
+    parser.add_argument('--add_noise', action='store_true')
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--learning_rate', type=float, default=1e-2)
     parser.add_argument('--weight_decay', type=float, default=0.1)
@@ -181,7 +183,6 @@ if __name__ == '__main__':
 
     # parse execution args
     args = argparser()
-
     print(args)
 
     valid_models = ['google/efficientnet-b3', 'google/efficientnet-b7', 'google/mobilenet_v2_1.0_224']
@@ -190,13 +191,12 @@ if __name__ == '__main__':
 
     # initialize train, test, and labels datasets
     dataloader = dataset(
-        data_path=args.directory+'/data/tensors.pt',
-        label_path=args.directory+'/data/anime_label_map.json',
+        noise=args.add_noise,
+        directory=args.directory,
         train_test_split=args.train_test_split
     )
     train, test = dataloader.get_dataset()
     labels = dataloader.get_labels()
-
 
     # initialize model for training
     model = classifier(
