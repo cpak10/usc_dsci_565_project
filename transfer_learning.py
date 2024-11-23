@@ -17,7 +17,7 @@ class dataset():
     '''
     def __init__(self, noise=False, directory='', train_test_split=0):
         self.noise = noise
-        self.data_path = directory + '/data/tensors.pt' if not noise else '/data/tensors_noise.pt'
+        self.data_path = directory + '/data/tensors.pt' if not noise else directory + '/data/tensors_noise.pt'
         self.label_path = directory + '/data/anime_label_map.json'
         self.train_test_split=train_test_split
 
