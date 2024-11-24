@@ -1,3 +1,4 @@
+import argparse
 import pandas as pd
 import numpy as np
 import seaborn as sns
@@ -72,8 +73,11 @@ def graph_performance(time):
     plt.savefig(path + f'/epoch_performance_{time}.png', dpi=200)
     plt.close()
 
-
-path = '/Users/jonah.krop/Documents/USC/usc_dsci_565_project/training_results'
+parser = argparse.ArgumentParser()
+parser.add_argument('--resultdir', type=str,
+    default='/Users/jonah.krop/Documents/USC/usc_dsci_565_project/training_results')
+args = parser.parse_args()
+path = args.resultdir
 times = sorted([f.split('.')[0][-10:] for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and f[0:11] == 'predictions'])
 
 for time in times:
