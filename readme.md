@@ -3,32 +3,65 @@
 ## Data Initialization
 In effort to standardize data for model development, please follow the instructions below.
 
-### Local Setup
-1. `pip install -r requirements.txt`
-2. `python preprocessing.py`
+1. Initialize virtual environment on python 3.11
+    1. `python3.11 -m venv .venv`
+    2. `. .venv/bin/activate`
+2. `pip install -r requirements.txt`
+3. `python preprocessing.py`
 
-### Google Colab Setup
-1. Upload `preprocessing.py` to working directory.
-2. `!pip install datasets`
-3. `!python preprocessing.py`
+These steps should initialize a `/data` folder in your current directory and create two .pt files. You should only have to run this code once per environment.
 
-For more information on setting up virtual machines for Google Colab please [see the below section](#machine-initialization).
-
-Both of these steps should initialize a data folder in your current directory and create two .pt files. You should only have to run this code once per environment. Once the .pt files are created, you can then run the following code to load the data for model development.
-
-```
-data = torch.load('./data/tensors.pt', weights_only=True)
-
-train_percent = 0.9
-test_percent = 0.1
-train_dataset, test_dataset = torch.utils.data.random_split(data, [train_percent, test_percent])
-
-train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=32, shuffle=True)
-test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=32, shuffle=True)
-```
+1. `tensors.pt` contains all of the training images in tensor form
+2. `tensors_noise.pt` contains everything in `tensors.pt` and also adds in random images as noise
 
 You can also run `preprocessing_check.ipynb` to ensure the data was downloaded correctly.
 
-## Machine Initialization
+## Training Models
+Models can be trained using a one line command that utilizes the packages from Hugging Face.
 
-The default memory allocations for Google Colab is not sufficient for dealing with the entire dataset. You can increase the memory allocations through a custom virtual machine initialized on Google Cloud Platform. Follow the [instructions here](https://research.google.com/colaboratory/marketplace.html). Through the custom machine, you can increase memory, storage, and also add GPUs. Memory settings above 30GB should suffice for working with the data. Training models may require larger memory settings and possibly GPUs.
+`python transfer_learning.py --model [INSET MODEL NAME] --directory [INSERT WORKING DIRECTORY]`
+
+This call allows for various flags to alter the training process.
+
+### model
+Hugging Face location of specific model to train.
+
+* Type: `str`
+* Default: `google/efficientnet-b3`
+
+### pretrained
+No argument required. Add flag if model should be initialized with pretrained weights.
+
+### add_noise
+No argument required. Add flag if noise should be added into training process.
+
+### batch_size
+* Type: `int`
+* Default: `32`
+
+### learning_rate
+* Type: `float`
+* Default: `1e-2`
+
+### weight_decay
+* Type: `float`
+* Default: `0.1`
+
+### epochs
+* Type: `float`
+* Default: `2.0`
+
+### directory
+Location of working directory. Can be set to `.` if current directory is working.
+
+* Type: `str`
+* Default: `/Users/jonah.krop/Documents/USC/usc_dsci_565_project`
+
+### train_test_split
+* Type: `float`
+* Default: `0.2`
+
+## Model Analysis
+Select summary statistics can be generated for each run of a trained model with a one line call.
+
+`python analysis.py --resultdir [INSERT PATH TO RESULTS]`
