@@ -1,3 +1,4 @@
+import os
 import torch
 import time
 import json
@@ -185,7 +186,8 @@ if __name__ == '__main__':
     args = argparser()
     print(args)
 
-    valid_models = ['google/efficientnet-b3', 'google/efficientnet-b7', 'google/mobilenet_v2_1.0_224']
+    valid_models = ['google/efficientnet-b3', 'google/efficientnet-b7', 'google/mobilenet_v2_1.0_224',
+                    'microsoft/resnet-18']
     if args.model not in valid_models:
         raise ValueError(f'for now, please use a model in {valid_models}')
 
@@ -221,6 +223,7 @@ if __name__ == '__main__':
         'weight_decay': args.weight_decay,
         'train_test_split': args.train_test_split
     }
+    os.makedirs(f'{args.directory}/training_results', exist_ok=True)
     # save step-by-step logs and model params to json file
     with open(args.directory+f'/training_results/model_json_{t}.json', 'w') as f:
         json.dump(train_results, f)
