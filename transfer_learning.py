@@ -96,6 +96,7 @@ class classifier():
         mps = torch.backends.mps.is_available()
         device = 'cuda' if cuda else 'mps' if mps else 'cpu'
         self.classifier.to(device)
+        print('model device used:', device)
 
         # define initial hyperparameters for training the model
         args_d = {
