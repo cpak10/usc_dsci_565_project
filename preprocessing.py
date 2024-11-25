@@ -54,7 +54,7 @@ def download_data_bangumi(title: str, label: int, n: int) -> list:
     print(f'finished downloading {title}')
 
     os.remove('./data/all.zip')
-    shutil.rmtree('./data/images')
+    shutil.rmtree('./data/images', ignore_errors=True)
     shutil.rmtree('./data/.cache')
 
     return tensors
