@@ -122,7 +122,7 @@ if __name__ == '__main__':
     print('all in-sample downloads finished')
 
     label_map = dict(enumerate(animes))
-    label_map[11] = 'noise'
+    label_map[10] = 'noise'
     with open('./data/anime_label_map.json', 'w') as f:
         json.dump(label_map, f)
 

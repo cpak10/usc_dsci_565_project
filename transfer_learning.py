@@ -30,7 +30,9 @@ class dataset():
         
         # load all data
         tensors = torch.load(self.data_path)
-        all_data = Dataset.from_dict({'pixel_values': [t[0] for t in tensors], 'labels': [t[1] for t in tensors]})
+        all_data = Dataset.from_dict(
+            {'pixel_values': [t[0] for t in tensors],
+             'labels': [t[1] if t[1] < 10 else 10 for t in tensors]})
         
         # optionally apply a train/test split
         if self.train_test_split > 0:
