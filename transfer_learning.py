@@ -49,7 +49,7 @@ class dataset():
             labels = json.load(f)
 
         if not self.noise:
-            del labels['11']
+            del labels['10']
 
         return labels
 
