@@ -61,6 +61,13 @@ Location of working directory. Can be set to `.` if current directory is working
 * Type: `float`
 * Default: `0.2`
 
+## GPU Training
+If running GPU training on local, download CUDA toolkit [here](https://developer.nvidia.com/cuda-11-7-0-download-archive) and cuDNN v8.9.7 [here](https://developer.nvidia.com/rdp/cudnn-archive).
+
+Additionally, initialize a new virtual environment and install `requirements_gpu.txt`. There is a chance you may need to run the following for `torch` and `torchvision`.
+
+`pip install torch torchvision --index-url https://download.pytorch.org/whl/cu117`
+
 ## Model Analysis
 Select summary statistics can be generated for each run of a trained model with a one line call.
 
