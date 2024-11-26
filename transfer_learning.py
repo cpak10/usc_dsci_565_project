@@ -8,19 +8,19 @@ import numpy as np
 import pandas as pd
 from datasets import Dataset
 from transformers import AutoConfig, AutoModelForImageClassification, Trainer, TrainingArguments
-# from torchvision import models
-
+from torchvision import transforms
 
 class dataset():
     '''
     Class defining the creation of a huggingface Dataset for training. Probably doesn't
     need to be a class rather than just a couple functions, but fuck it.
     '''
-    def __init__(self, noise=False, directory='', train_test_split=0):
+    def __init__(self, noise=False, directory='', train_test_split=0, model=None):
         self.noise = noise
         self.data_path = directory + '/data/tensors.pt' if not noise else directory + '/data/tensors_noise.pt'
         self.label_path = directory + '/data/anime_label_map.json'
         self.train_test_split=train_test_split
+        self.model = model
 
     def get_dataset(self):
         '''
@@ -30,9 +30,15 @@ class dataset():
         
         # load all data
         tensors = torch.load(self.data_path)
-        all_data = Dataset.from_dict(
-            {'pixel_values': [t[0] for t in tensors],
-             'labels': [t[1] if t[1] < 10 else 10 for t in tensors]})
+        if self.model == 'facebook/deit-tiny-patch16-224':
+            resize = transforms.Resize((224, 224))
+            all_data = Dataset.from_dict(
+                {'pixel_values': [resize(t[0]) for t in tensors],
+                'labels': [t[1] if t[1] < 10 else 10 for t in tensors]})
+        else:
+            all_data = Dataset.from_dict(
+                {'pixel_values': [t[0] for t in tensors],
+                'labels': [t[1] if t[1] < 10 else 10 for t in tensors]})
         
         # optionally apply a train/test split
         if self.train_test_split > 0:
@@ -190,7 +196,7 @@ if __name__ == '__main__':
     print(args)
 
     valid_models = ['google/efficientnet-b3', 'google/efficientnet-b7', 'google/mobilenet_v2_1.0_224',
-                    'microsoft/resnet-18']
+                    'microsoft/resnet-18', 'facebook/deit-tiny-patch16-224']
     if args.model not in valid_models:
         raise ValueError(f'for now, please use a model in {valid_models}')
 
@@ -198,7 +204,8 @@ if __name__ == '__main__':
     dataloader = dataset(
         noise=args.add_noise,
         directory=args.directory,
-        train_test_split=args.train_test_split
+        train_test_split=args.train_test_split,
+        model=args.model
     )
     train, test = dataloader.get_dataset()
     labels = dataloader.get_labels()
