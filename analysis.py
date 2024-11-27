@@ -105,6 +105,11 @@ def make_heatmap(time):
 
 
 def summarize(time):
+    '''
+    Summarize a set of predictions in one line, with accuracy by category
+    and training parameters for quick reference.
+    '''
+
     # load data
     data = pd.read_csv(path+f'/predictions_{time}.csv')
     data['match'] = data['actual'] == data['predicted_label']
@@ -117,12 +122,7 @@ def summarize(time):
     with open(path+f'/model_json_{time}.json', 'r') as f:
         log = json.load(f)
 
-
-    ['haikyuu', 'jujutsukaisen', 'chainsawman', 'sousounofrieren', 'spyxfamily',
-                'bluelock', 'skiptoloafer', 'kimetsunoyaibayuukakuhen',
-                'deaddeaddemonsdededededestruction', 'durarara']
-
-
+    # build row
     summ = [
         time,
         params['model'],
@@ -159,7 +159,7 @@ args = parser.parse_args()
 path = args.resultdir
 times = sorted([f.split('.')[0][-10:] for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and f[0:11] == 'predictions'])
 
-
+# go thru every prediction file and do stuff
 combined = []
 for time in times:
     graph_performance(time)
@@ -167,6 +167,7 @@ for time in times:
     make_heatmap(time)
     combined.append(summarize(time))
 
+# make the combined, summarized dataset
 combined_cols = [
     'run_timestamp',
     'model',
@@ -190,6 +191,5 @@ combined_cols = [
     'noise_accuracy',
     'runtime_mins'
 ]
-
 df = pd.DataFrame(data=combined, columns=combined_cols)
 df.to_csv(path+'/combined_results.csv', index=False)
