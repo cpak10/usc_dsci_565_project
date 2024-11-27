@@ -5,3 +5,4 @@
 .DS_Store
 __pycache__
 repeat_train.sh
+repeat_train.ps1
