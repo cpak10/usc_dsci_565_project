@@ -73,6 +73,85 @@ def graph_performance(time):
     plt.savefig(path + f'/epoch_performance_{time}.png', dpi=200)
     plt.close()
 
+
+def make_heatmap(time):
+    '''
+    Make a heat map with predicted labels on the x axis, and actual labels on y.
+    Show % of total events that fall in each bucket.
+    '''
+    
+    data = pd.read_csv(path+f'/predictions_{time}.csv')
+
+    # unique categories
+    cats = sorted(list(data['actual'].unique()))
+
+    # prep dataset 
+    permu = pd.MultiIndex.from_product([cats, cats], names=['actual', 'predicted_label'])
+    grid = pd.DataFrame(index=permu).reset_index()
+    full = pd.merge(grid, data.groupby(by=['actual', 'predicted_label']).size().reset_index(name='num'), how='left')
+    full = pd.merge(full, data.groupby(by=['actual']).size().reset_index(name='label_num'), how='left')
+    full['num'] = full['num'].fillna(0)
+    full['pct'] = full['num']/full['label_num']
+
+    # build heatmap
+    heatmap = full.pivot(index='actual', columns='predicted_label', values='pct')
+    sns.heatmap(heatmap, cmap='Blues', cbar_kws={'label': 'pct'}, annot_kws={'size': 8}, annot=True, linewidths=0.2, linecolor='black', fmt='.2f', xticklabels=1, yticklabels=1)
+    plt.xticks(fontsize=6)
+    plt.yticks(fontsize=6)
+    plt.xlabel('Predicted Category', fontsize=8)
+    plt.ylabel('Actual Category', fontsize=8)
+    plt.savefig(path+f'/heatmap_{time}.png', dpi=300, bbox_inches='tight')
+    plt.close()
+
+
+def summarize(time):
+    # load data
+    data = pd.read_csv(path+f'/predictions_{time}.csv')
+    data['match'] = data['actual'] == data['predicted_label']
+
+    # load model params
+    with open(path+f'/model_params_{time}.json', 'r') as f:
+        params = json.load(f)
+
+    # load model log
+    with open(path+f'/model_json_{time}.json', 'r') as f:
+        log = json.load(f)
+
+
+    ['haikyuu', 'jujutsukaisen', 'chainsawman', 'sousounofrieren', 'spyxfamily',
+                'bluelock', 'skiptoloafer', 'kimetsunoyaibayuukakuhen',
+                'deaddeaddemonsdededededestruction', 'durarara']
+
+
+    summ = [
+        time,
+        params['model'],
+        params['learning_rate'],
+        params['batch_size'],
+        params['epochs'],
+        params['weight_decay'],
+        params['train_test_split'],
+        params['pretrained'],
+        np.mean(data['match']),
+        np.mean(data['match'][data['actual'] == 'haikyuu']),
+        np.mean(data['match'][data['actual'] == 'jujutsukaisen']),
+        np.mean(data['match'][data['actual'] == 'chainsawman']),
+        np.mean(data['match'][data['actual'] == 'sousounofrieren']),
+        np.mean(data['match'][data['actual'] == 'spyxfamily']),
+        np.mean(data['match'][data['actual'] == 'bluelock']),
+        np.mean(data['match'][data['actual'] == 'skiptoloafer']),
+        np.mean(data['match'][data['actual'] == 'kimetsunoyaibayuukakuhen']),
+        np.mean(data['match'][data['actual'] == 'deaddeaddemonsdededededestruction']),
+        np.mean(data['match'][data['actual'] == 'durarara']),
+        np.mean(data['match'][data['actual'] == 'noise']),
+        log[-1]['train_runtime']/60
+    ]
+
+    return summ
+
+    
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--resultdir', type=str,
     default='/Users/jonah.krop/Documents/USC/usc_dsci_565_project/training_results')
@@ -80,6 +159,37 @@ args = parser.parse_args()
 path = args.resultdir
 times = sorted([f.split('.')[0][-10:] for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and f[0:11] == 'predictions'])
 
+
+combined = []
 for time in times:
     graph_performance(time)
     compute_accuracy(time)
+    make_heatmap(time)
+    combined.append(summarize(time))
+
+combined_cols = [
+    'run_timestamp',
+    'model',
+    'learning_rate',
+    'batch_size',
+    'epochs',
+    'weight_decay',
+    'train_test_split',
+    'pretrained',
+    'accuracy',
+    'haikyuu_accuracy',
+    'jujutsukaisen_accuracy',
+    'chainsawman_accuracy',
+    'sousounofrieren_accuracy',
+    'spyxfamily_accuracy',
+    'bluelock_accuracy',
+    'skiptoloafer_accuracy',
+    'kimetsunoyaibayuukakuhen_accuracy',
+    'deaddeaddemonsdededededestruction_accuracy',
+    'durarara_accuracy',
+    'noise_accuracy',
+    'runtime_mins'
+]
+
+df = pd.DataFrame(data=combined, columns=combined_cols)
+df.to_csv(path+'/combined_results.csv', index=False)
