@@ -118,9 +118,9 @@ class classifier():
             'eval_steps': 100,
             'logging_steps': 100,
             'per_device_eval_batch_size': self.per_device_train_batch_size,
-            'seed': 0,
-            'save_total_limit': 5,
-            'load_best_model_at_end': True
+            'seed': 0
+            # 'save_total_limit': 5,
+            # 'load_best_model_at_end': True
         }
         m_args = TrainingArguments(**args_d)
 
