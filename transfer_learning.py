@@ -7,8 +7,7 @@ import argparse
 import numpy as np
 import pandas as pd
 from datasets import Dataset
-from transformers import AutoConfig, AutoModelForImageClassification, Trainer, TrainingArguments
-from torchvision import transforms
+from transformers import AutoConfig, AutoModelForImageClassification, Trainer, TrainingArguments, DeiTFeatureExtractor
 
 class dataset():
     '''
@@ -31,9 +30,12 @@ class dataset():
         # load all data
         tensors = torch.load(self.data_path)
         if self.model == 'facebook/deit-tiny-patch16-224':
-            resize = transforms.Resize((224, 224))
+            image_processor = DeiTFeatureExtractor.from_pretrained(
+                'facebook/deit-tiny-patch16-224')
+            processed_pixels = image_processor(images=[t[0] for t in tensors],
+                return_tensors='pt', do_rescale=False)
             all_data = Dataset.from_dict(
-                {'pixel_values': [resize(t[0]) for t in tensors],
+                {'pixel_values': [pixels for pixels in processed_pixels['pixel_values']],
                 'labels': [t[1] if t[1] < 10 else 10 for t in tensors]})
         else:
             all_data = Dataset.from_dict(
